@@ -16,14 +16,14 @@ class AccidentsServlet extends ScalatraServlet with CorsSupport {
 
   get("/mortal") {
     pretty(render(
-      ("mortal_accidents" -> "36") ~ ("total_accidents" -> "100")
+      ("mortal_accidents" -> 36) ~ ("total_accidents" -> 100)
     ))
   }
 
 
   get("/wounded") {
     pretty(render(
-      ("wounded" -> "84") ~ ("total_accidents" -> "100")
+      ("wounded" -> 84) ~ ("total_accidents" -> 100)
     ))
   }
 }
