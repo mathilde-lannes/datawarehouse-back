@@ -6,7 +6,7 @@ name := "Datawarehouse"
 
 version := "0.1.0-SNAPSHOT"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.11.12"
 
 resolvers += Classpaths.typesafeReleases
 resolvers += "Typesafe Maven Repository" at "http://repo.typesafe.com/typesafe/maven-releases/"
