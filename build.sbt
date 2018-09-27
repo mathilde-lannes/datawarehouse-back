@@ -6,7 +6,7 @@ name := "Datawarehouse"
 
 version := "0.1.0-SNAPSHOT"
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.6"
 
 resolvers += Classpaths.typesafeReleases
 resolvers += "Typesafe Maven Repository" at "http://repo.typesafe.com/typesafe/maven-releases/"
@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided",
   "org.json4s" %% "json4s-jackson" % "3.2.11",
   "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2",
-  "org.apache.spark" %% "spark-sql" % "2.3.1",
+  "com.github.tototoshi" %% "scala-csv" % "1.3.5"
 )
 
 mainClass in Compile := Some("ice.master.datawarehouse.JettyLauncher")

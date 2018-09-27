@@ -8,22 +8,18 @@ import org.mongodb.scala.Document
 
 class DatawarehouseServlet extends ScalatraServlet with CorsSupport {
 
-  /**
-    * Adds CORS header to each response in order to prevent cross-origin
-    * domain issues.
-    */
-  after("/*") {
-    response.setHeader("Access-Control-Allow-Origin", "*")
-  }
+    /**
+     * Adds CORS header to each response in order to prevent cross-origin
+     * domain issues.
+     */
+    after("/*") {
+        response.setHeader("Access-Control-Allow-Origin", "*")
+    }
 
-  get("/") {
-    val database: Database = new Database()
-    database.testDatabase().subscribe((results: Seq[Document]) => {
-        println(s"Found: #$results")
-
-      })
-    // val res = "collection size" -> results.size
-    pretty(render("piou" -> "plop"))
-  }
+    get("/") {
+        val database: Database = new Database()
+        
+        database.recreate()
+    }
 
 }

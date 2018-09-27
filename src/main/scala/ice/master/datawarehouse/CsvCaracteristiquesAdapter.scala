@@ -1,44 +1,36 @@
 package ice.master.datawarehouse
 
-import java.io.File
-
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.SparkSession
-import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-import scalaj.http._
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.fasterxml.jackson.databind.ObjectMapper
-import ice.master.datawarehouse.model.Lieu
-import scala.io.Source
 import java.io.FileNotFoundException
-import ice.master.datawarehouse.model.Accident
+
+import scala.io.Source
+import com.github.tototoshi.csv._
+
 import org.bson.types.ObjectId
 
-case class Caracteristique(Num_Acc:String,  dep: String, com: String)
+import com.fasterxml.jackson.databind.ObjectMapper
+import ice.master.datawarehouse.model.Accident
+import ice.master.datawarehouse.model.Lieu
+import com.fasterxml.jackson.databind.ObjectMapper
+import java.io.File
 
 object CsvCaracteristiquesAdapter {
     def main(args: Array[String]): Unit = {
-        val spark = SparkSession
-            .builder()
-            .master("local[*]")
-            .appName("M2 ICE — Datawarehouse")
-            .getOrCreate()
-
-        val customer = spark.read
-            .option("header", true)
-            .csv(new File("src/main/resources/caracteristiques_2016.csv").getAbsolutePath)
+        System.setProperty("javax.net.ssl.trustStore", f"C:/Programmation/Java/bin/jre1.8.0_181/lib/security/cacerts")
             
-        import spark.implicits._
+       var lieux = Seq[Lieu]()
+       var accidents = Seq[Accident]()
+       
+       for (fields <- CSVReader.open(new File("src/main/resources/caracteristiques_2016.csv")).all()) {
+    	   lieux = lieux :+ Lieu(fields(15), fields(11), nomCommune(fields(15), fields(11)))
+    	   accidents = accidents :+ Accident(new ObjectId(), fields(0))
+       }
+       
+        println(lieux)
+       
+       val database = new Database()
         
-        val database = new Database()
-        
-        val lieux = customer
-            .as[Caracteristique]
-            .map { case Caracteristique(acc, dep, com) => (acc, Lieu(dep, com, nomCommune(dep, com))) }
-            .collect()
-            
-       database.persistAccidents(lieux.map { case Tuple2(numAcc, _) => Accident(new ObjectId(), numAcc) })
-       database.persistLieux(lieux.map(_._2))
+       database.persistAccidents(accidents)
+       database.persistLieux(lieux)
     }
     
     def nomCommune(departement: String, commune: String): String = {
@@ -57,6 +49,7 @@ object CsvCaracteristiquesAdapter {
                 val parsedJson = mapper.readValue[Map[String, Object]](json.reader())
                 
                 parsedJson("nom").asInstanceOf[String]
+                ""
                 
             } catch {
                 case e: FileNotFoundException => {
