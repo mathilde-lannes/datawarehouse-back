@@ -6,6 +6,8 @@ import scala.io.Source
 import com.github.tototoshi.csv._
 
 import org.bson.types.ObjectId
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import ice.master.datawarehouse.model.Accident
@@ -20,9 +22,16 @@ object CsvCaracteristiquesAdapter {
        var lieux = Seq[Lieu]()
        var accidents = Seq[Accident]()
        
+       var firstLine = true
+       
        for (fields <- CSVReader.open(new File("src/main/resources/caracteristiques_2016.csv")).all()) {
-    	   lieux = lieux :+ Lieu(fields(15), fields(11), nomCommune(fields(15), fields(11)))
-    	   accidents = accidents :+ Accident(new ObjectId(), fields(0))
+           if (firstLine) {
+               firstLine = false
+           }
+           else {
+        	   lieux = lieux :+ Lieu(fields(15), fields(11), nomCommune(fields(15), fields(11)))
+        	   accidents = accidents :+ Accident(new ObjectId(), fields(0))
+           }
        }
        
         println(lieux)
@@ -44,11 +53,11 @@ object CsvCaracteristiquesAdapter {
             try {
                 val json = Source.fromURL(s"https://geo.api.gouv.fr/communes/$insee?fields=nom&format=json&geometry=centre")
                 
-                val mapper = new ObjectMapper() with ScalaObjectMapper
-                mapper.registerModule(DefaultScalaModule)
-                val parsedJson = mapper.readValue[Map[String, Object]](json.reader())
-                
-                parsedJson("nom").asInstanceOf[String]
+                val jobject = parse(json.mkString)
+                (jobject \ "name") match {
+                    case JString(name) => name
+                    case _ => ""
+                }
                 ""
                 
             } catch {
