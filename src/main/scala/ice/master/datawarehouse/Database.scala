@@ -18,6 +18,7 @@ import ice.master.datawarehouse.model.ObstacleMobile
 import ice.master.datawarehouse.model.Trajet
 import ice.master.datawarehouse.model.Accident
 import com.mongodb.client.model.UpdateOptions
+import com.mongodb.client.model.InsertManyOptions
 
 
 class Database {
@@ -136,6 +137,16 @@ class Database {
             )
             obstaclesMobiles.insertMany(newObstaclesMobiles).subscribe((e: Throwable) => e.printStackTrace(), () => Unit) 
         })
+    }
+    
+    def persistAccidents(newAccidents: Seq[Accident]) {
+        val accidents: MongoCollection[Accident] = database.getCollection("accidents")
+        accidents.insertMany(newAccidents).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
+    }
+    
+    def persistLieux(newLieux: Seq[Lieu]) {
+        val lieux: MongoCollection[Lieu] = database.getCollection("lieux")
+        lieux.insertMany(newLieux).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
     }
 
     def closeConnection(): Unit = {

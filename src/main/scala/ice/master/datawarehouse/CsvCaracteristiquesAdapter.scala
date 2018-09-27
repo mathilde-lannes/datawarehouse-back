@@ -11,13 +11,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import ice.master.datawarehouse.model.Lieu
 import scala.io.Source
 import java.io.FileNotFoundException
+import ice.master.datawarehouse.model.Accident
+import org.bson.types.ObjectId
 
 case class Caracteristique(Num_Acc:String,  dep: String, com: String)
 
-object CsvAdapter {
+object CsvCaracteristiquesAdapter {
     def main(args: Array[String]): Unit = {
-        System.setProperty("javax.net.ssl.trustStore", f"C:/Programmation/Java/bin/jre1.8.0_181/lib/security/cacerts")
-
         val spark = SparkSession
             .builder()
             .master("local[*]")
@@ -37,8 +37,8 @@ object CsvAdapter {
             .map { case Caracteristique(acc, dep, com) => (acc, Lieu(dep, com, nomCommune(dep, com))) }
             .collect()
             
-       database.persistAccidents(lieux.map(_._1))
-       database.persistLieux(lieux.map(_._2)
+       database.persistAccidents(lieux.map { case Tuple2(numAcc, _) => Accident(new ObjectId(), numAcc) })
+       database.persistLieux(lieux.map(_._2))
     }
     
     def nomCommune(departement: String, commune: String): String = {
