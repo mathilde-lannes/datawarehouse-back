@@ -19,12 +19,14 @@ import ice.master.datawarehouse.model.Trajet
 import ice.master.datawarehouse.model.Accident
 import com.mongodb.client.model.UpdateOptions
 import com.mongodb.client.model.InsertManyOptions
+import ice.master.datawarehouse.model.Details
+import ice.master.datawarehouse.model.VehiculeAccidente
 
 
 class Database {
     val mongo: MongoClient = MongoClient()
     
-    val codecRegistry = fromRegistries(fromProviders(classOf[Accident], classOf[Gravite], classOf[ObstacleFixe], classOf[Trajet], classOf[Lieu], classOf[Manoeuvre], classOf[ObstacleFixe], classOf[ObstacleMobile], classOf[CategorieDeManoeuvre]), DEFAULT_CODEC_REGISTRY)
+    val codecRegistry = fromRegistries(fromProviders(classOf[VehiculeAccidente], classOf[Details], classOf[Accident], classOf[Gravite], classOf[ObstacleFixe], classOf[Trajet], classOf[Lieu], classOf[Manoeuvre], classOf[ObstacleFixe], classOf[ObstacleMobile], classOf[CategorieDeManoeuvre]), DEFAULT_CODEC_REGISTRY)
     val database: MongoDatabase = mongo.getDatabase("warehouse").withCodecRegistry(codecRegistry)
 
     def drop() = {
@@ -139,14 +141,24 @@ class Database {
         })
     }
     
-    def persistAccidents(newAccidents: Seq[Accident]) {
+    def persistAccidents(newAccidents: Set[Accident]) {
         val accidents: MongoCollection[Accident] = database.getCollection("accidents")
-        accidents.insertMany(newAccidents).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
+        accidents.insertMany(newAccidents.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
     }
     
-    def persistLieux(newLieux: Seq[Lieu]) {
+    def persistLieux(newLieux: Set[Lieu]) {
         val lieux: MongoCollection[Lieu] = database.getCollection("lieux")
-        lieux.insertMany(newLieux).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
+        lieux.insertMany(newLieux.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
+    }
+    
+    def persistDetails(newDetails: Set[Details]) {
+        val lieux: MongoCollection[Details] = database.getCollection("details")
+        lieux.insertMany(newDetails.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
+    }
+    
+    def persistVehiculesAccidentes(newVehicules: Set[VehiculeAccidente]) {
+    	val lieux: MongoCollection[VehiculeAccidente] = database.getCollection("vehicules")
+		lieux.insertMany(newVehicules.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
     }
 
     def closeConnection(): Unit = {
