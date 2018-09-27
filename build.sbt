@@ -19,7 +19,8 @@ libraryDependencies ++= Seq(
   "org.eclipse.jetty" % "jetty-webapp" % "9.2.15.v20160210" % "container;compile",
   "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided",
   "org.json4s" %% "json4s-jackson" % "3.2.11",
-  "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2"
+  "org.mongodb.scala" %% "mongo-scala-driver" % "2.4.2",
+  "org.apache.spark" %% "spark-sql" % "2.3.1",
 )
 
 mainClass in Compile := Some("ice.master.datawarehouse.JettyLauncher")
