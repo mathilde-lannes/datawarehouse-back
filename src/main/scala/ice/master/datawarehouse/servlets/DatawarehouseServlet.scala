@@ -5,6 +5,8 @@ import org.scalatra._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.mongodb.scala.Document
+import ice.master.datawarehouse.CsvAdapter
+import ice.master.datawarehouse.MongoHelpers._
 
 class DatawarehouseServlet extends ScalatraServlet with CorsSupport {
 
@@ -16,10 +18,10 @@ class DatawarehouseServlet extends ScalatraServlet with CorsSupport {
         response.setHeader("Access-Control-Allow-Origin", "*")
     }
 
-    get("/") {
+    get("/init") {
         val database: Database = new Database()
         
-        database.recreate()
+        CsvAdapter.fill(database)
     }
 
 }
