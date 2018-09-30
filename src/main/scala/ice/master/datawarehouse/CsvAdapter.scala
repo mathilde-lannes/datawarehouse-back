@@ -16,108 +16,115 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
 import ice.master.datawarehouse.model.Details
 import ice.master.datawarehouse.model.VehiculeAccidente
+import org.mongodb.scala.MongoCollection
+import scala.util.Try
 
 object CsvAdapter {
-    
+
     def main(args: Array[String]): Unit = {
-       // CARACTERISTIQUES
         
-       var lieux = Set[Lieu]()
-       var accidents = Set[Accident]()
-       
-       var isHeadersLine = true
-       
-       for (caracteristiques <- CSVReader.open(new File("src/main/resources/caracteristiques_2016.csv")).allWithHeaders()) {
-           if (isHeadersLine) {
-               isHeadersLine = false
-           }
-           else {
-               val accidentId = caracteristiques("Num_Acc")
-               val commune = caracteristiques("com")
-               val departement = caracteristiques("dep")
-               
-        	   lieux += Lieu(departement, commune, nomCommune(departement, commune))
-        	   accidents += Accident(new ObjectId(), accidentId)
-           }
-       }
+        // CARACTERISTIQUES
+
+        var lieux = Set[Lieu]()
+        var accidents = Set[Accident]()
+        
+        var communePerInsee: Map[String, String] = Map()
+        
+        {
+            // Makes possible to parse the CSV using ';' as delimiter
+            implicit object SemicolonSeparatorFormat extends DefaultCSVFormat {
+                override val delimiter = ';'
+            }
+            
+            for (commune <- CSVReader.open(new File("src/main/resources/laposte_hexasmal.csv")).iteratorWithHeaders) {
+                val insee = commune("Code_commune_INSEE")
+                val name = commune("Nom_commune")
+                    
+                def isValid(s: String) = s != null && s != "";
+                    
+                if (isValid(insee) && isValid(name)) {
+                    communePerInsee += (insee -> name)
+                }
+            }
+        }
+
+        val communesConnues = scala.collection.mutable.Map[String, String]()
+
+        for (caracteristiques <- CSVReader.open(new File("src/main/resources/caracteristiques_2016.csv")).iteratorWithHeaders) {
+            val accidentId = caracteristiques("Num_Acc")
+            val commune = caracteristiques("com")
+            val departement = caracteristiques("dep")
+
+            lieux += Lieu(departement, commune, nomCommune(communePerInsee, departement, commune))
+            accidents += Accident(accidentId)
+        }
         
         // USAGERS
-        
-        isHeadersLine = true
-        
+
         var details = Set[Details]()
-       
-       for (usager<- CSVReader.open(new File("src/main/resources/usagers_2016.csv")).allWithHeaders()) {
-           if (isHeadersLine) {
-               isHeadersLine = false // skip headers
-           }
-           else {
-               if (usager("grav") != "" && usager("trajet") != "")
-                   details += Details(usager("grav").toInt, usager("trajet").toInt, usager("Num_Acc"))
-           }
-       }
+
+        for (usager <- CSVReader.open(new File("src/main/resources/usagers_2016.csv")).iteratorWithHeaders) {
+            if (usager("grav") != "" && usager("trajet") != "")
+                details += Details(usager("grav").toInt, usager("trajet").toInt, usager("Num_Acc"))
+        }
         
-       // VEHICULES
+        // VEHICULES
+
+        var isHeadersLine = true
+
+        var vehiculesAccidentes = Map[(String, String), VehiculeAccidente]()
+
+        for (fields <- CSVReader.open(new File("src/main/resources/vehicules_2016.csv")).iterator) {
+            if (isHeadersLine) {
+                isHeadersLine = false // skip headers
+            } else {
+                val List(accidentId, senc, catv, occutc, obs, obsm, choc, manv, vehiculeId) = fields
+                
+                val id = (accidentId, vehiculeId)
+
+                if (vehiculesAccidentes contains (id)) {
+                    if (manv != "")
+                        vehiculesAccidentes(id).manoeuvresId = (manv.toInt) :: vehiculesAccidentes(id).manoeuvresId
+
+                    if (obs != "")
+                        vehiculesAccidentes(id).obstaclesFixesId = (obs.toInt) :: vehiculesAccidentes(id).obstaclesFixesId
+
+                    if (obsm != "")
+                        vehiculesAccidentes(id).obstaclesMobilesId = (obsm.toInt) :: vehiculesAccidentes(id).obstaclesMobilesId
+                } else {
+                    def parse(n: String) = Try(List(n.toInt)).getOrElse(List()) 
+                    vehiculesAccidentes += (id -> VehiculeAccidente(id.toString, vehiculeId, accidentId, parse(obs), parse(obsm), parse(manv)))
+                }
+            }
+        }
         
-        isHeadersLine = true
-        
-        var vehiculesAccidentes = Map[String, VehiculeAccidente]()
-       
-       for (fields <- CSVReader.open(new File("src/main/resources/vehicules_2016.csv")).all()) {
-           if (isHeadersLine) {
-               isHeadersLine = false // skip headers
-           }
-           else {
-               val List(accidentId, senc, catv, occutc, obs, obsm, choc, manv, id) = fields
-               
-               if (vehiculesAccidentes contains id) {
-                   vehiculesAccidentes(id).manoeuvresId = (manv.toInt) :: vehiculesAccidentes(id).manoeuvresId
-        		   vehiculesAccidentes(id).obstaclesFixesId = (obs.toInt) :: vehiculesAccidentes(id).obstaclesFixesId
-        		   vehiculesAccidentes(id).obstaclesMobilesId = (obsm.toInt) :: vehiculesAccidentes(id).obstaclesMobilesId
-               }
-               else {
-                   vehiculesAccidentes = vehiculesAccidentes + (id -> VehiculeAccidente(id, accidentId, List(obs.toInt), List(obsm.toInt), List(manv.toInt)))
-               }
-           }
-       }
-       
-       val database = new Database()
-       database.recreate()
-       
-       // Wait for the database to re-create itself --> better allow to subscribe somehow...
-       Thread.sleep(5000)
-        
-       database.persistAccidents(accidents)
-       database.persistLieux(lieux)
-       database.persistDetails(details)
-       database.persistVehiculesAccidentes(vehiculesAccidentes.values.toSet)
+        println("about to create the database")
+
+        val database = new Database()
+        database.recreate()
+
+        // Wait for the DB to be fully created ... would be better to subscribe somehow
+        Thread.sleep(5000)
+
+        database.insertAccidents(accidents)
+        database.insertLieux(lieux)
+        database.insertDetails(details)
+        database.insertVehiculesAccidentes(vehiculesAccidentes.values.toSet)
+
+        // Wait for the information to be fully inserted ... would be better to subscribe somehow
+        Thread.sleep(60000)
     }
-    
-    def nomCommune(departement: String, commune: String): String = {
+
+    def nomCommune(communes: Map[String, String], departement: String, commune: String): String = {
         if (departement == null)
             ""
         else if (departement.last != '0') {
             "hors métropole"
-        }
-        else {
+        } else {
             val insee = departement.substring(0, 2) + commune
-            try {
-                val json = Source.fromURL(s"https://geo.api.gouv.fr/communes/$insee?fields=nom&format=json&geometry=centre")
-                val jobject = parse(json.mkString)
-                
-                (jobject \ "nom") match {
-                    case JString(name) => name
-                    case _ => "" // should never happen
-                }
-                
-            } catch {
-                case e: FileNotFoundException => {
-                    // the web service is not up-to-date and some INSEE code are not known
-                    ""
-                }
-            }
+
+            communes getOrElse (insee, "")
         }
-            
     }
-    
+
 }

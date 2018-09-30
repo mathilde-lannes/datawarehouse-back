@@ -29,6 +29,26 @@ class Database {
     val codecRegistry = fromRegistries(fromProviders(classOf[VehiculeAccidente], classOf[Details], classOf[Accident], classOf[Gravite], classOf[ObstacleFixe], classOf[Trajet], classOf[Lieu], classOf[Manoeuvre], classOf[ObstacleFixe], classOf[ObstacleMobile], classOf[CategorieDeManoeuvre]), DEFAULT_CODEC_REGISTRY)
     val database: MongoDatabase = mongo.getDatabase("warehouse").withCodecRegistry(codecRegistry)
 
+    def accidents(): MongoCollection[Accident] = database.getCollection("accidents")
+    
+    def categoriesDeManoeuvres(): MongoCollection[CategorieDeManoeuvre] = database.getCollection("categories_de_manoeuvre")
+    
+    def details(): MongoCollection[Details] = database.getCollection("details")
+    
+    def gravites(): MongoCollection[Gravite] = database.getCollection("gravites")
+    
+    def lieux(): MongoCollection[Lieu] = database.getCollection("lieux")
+    
+    def manoeuvres(): MongoCollection[Manoeuvre] = database.getCollection("manoeuvres")
+    
+    def obstaclesFixes(): MongoCollection[ObstacleFixe] = database.getCollection("obstacles_fixes")
+    
+    def obstaclesMobiles(): MongoCollection[ObstacleMobile] = database.getCollection("obstacles_mobiles")
+    
+    def trajets(): MongoCollection[Trajet] = database.getCollection("trajets")
+    
+    def vehicules() : MongoCollection[VehiculeAccidente] = database.getCollection("vehiculesAccidentes")
+    
     def drop() = {
         database.drop()
     }
@@ -62,7 +82,7 @@ class Database {
             
             // CREATE MANOEUVRES
 
-            val categoriesDeManoeuvres: MongoCollection[CategorieDeManoeuvre] = database.getCollection("category_de_manoeuvre")
+            val categoriesDeManoeuvres: MongoCollection[CategorieDeManoeuvre] = database.getCollection("categories_de_manoeuvre")
             val newCategoriesDeManoeuvre = Seq(
                 CategorieDeManoeuvre(0, "Manoeuvre principale avant l'accident"),
                 CategorieDeManoeuvre(1, "Changeant de file"),
@@ -137,28 +157,24 @@ class Database {
                 ObstacleMobile(6, "Animal sauvage"),
                 ObstacleMobile(9, "Autre")
             )
-            obstaclesMobiles.insertMany(newObstaclesMobiles).subscribe((e: Throwable) => e.printStackTrace(), () => Unit) 
+            obstaclesMobiles.insertMany(newObstaclesMobiles).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
         })
     }
     
-    def persistAccidents(newAccidents: Set[Accident]) {
-        val accidents: MongoCollection[Accident] = database.getCollection("accidents")
+    def insertAccidents(newAccidents: Set[Accident]) {
         accidents.insertMany(newAccidents.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
     }
     
-    def persistLieux(newLieux: Set[Lieu]) {
-        val lieux: MongoCollection[Lieu] = database.getCollection("lieux")
+    def insertLieux(newLieux: Set[Lieu]) {
         lieux.insertMany(newLieux.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
     }
     
-    def persistDetails(newDetails: Set[Details]) {
-        val lieux: MongoCollection[Details] = database.getCollection("details")
-        lieux.insertMany(newDetails.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
+    def insertDetails(newDetails: Set[Details]) {
+        details.insertMany(newDetails.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
     }
     
-    def persistVehiculesAccidentes(newVehicules: Set[VehiculeAccidente]) {
-    	val lieux: MongoCollection[VehiculeAccidente] = database.getCollection("vehicules")
-		lieux.insertMany(newVehicules.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
+    def insertVehiculesAccidentes(newVehicules: Set[VehiculeAccidente]) {
+        vehicules.insertMany(newVehicules.toList).subscribe((e: Throwable) => e.printStackTrace(), () => Unit)
     }
 
     def closeConnection(): Unit = {

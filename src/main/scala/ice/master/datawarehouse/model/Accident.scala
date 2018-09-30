@@ -5,4 +5,4 @@ import org.bson.types.ObjectId
 /**
  * 
  */
-final case class Accident(_id: ObjectId, num: String);
+final case class Accident(_id: String);
