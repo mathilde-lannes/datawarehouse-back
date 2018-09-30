@@ -50,18 +50,6 @@ object CsvAdapter {
         database.details.insertMany(details.toList).join()
         database.vehicules.insertMany(vehiculesAccidentes.toList).join()
     }
-
-    def nomCommune(communes: Map[String, String], departement: String, commune: String): String = {
-        if (departement == null)
-            ""
-        else if (departement.last != '0') {
-            "hors métropole"
-        } else {
-            val insee = departement.substring(0, 2) + commune
-
-            communes getOrElse (insee, "")
-        }
-    }
     
     def communesFrom(communesCSV: File): Map[String, String] = {
         // Makes possible to parse the CSV using ';' as delimiter
@@ -77,6 +65,7 @@ object CsvAdapter {
                 
             def isValid(s: String) = s != null && s != "";
                 
+            // Incorrect values are ignored
             if (isValid(insee) && isValid(name)) {
                 communesPerInsee += (insee -> name)
             }
@@ -95,12 +84,24 @@ object CsvAdapter {
             val accidentId = caracteristiques("Num_Acc")
             val commune = caracteristiques("com")
             val departement = caracteristiques("dep")
-
-            lieux += Lieu(departement, commune, nomCommune(communePerInsee, departement, commune))
+            
+            // Incorrect values are ignored
+            if (commune.length == 3 && departement.length == 3)
+                lieux += Lieu(departement, commune, nomCommune(communePerInsee, departement, commune))
+            
             accidents += Accident(accidentId)
         }
         
         return (lieux, accidents)
+    }
+
+    def nomCommune(communes: Map[String, String], departement: String, commune: String): String = {
+        if (departement.last != '0') {
+            "hors métropole"
+        } else {
+            val insee = departement.substring(0, 2) + commune
+            communes getOrElse (insee, "")
+        }
     }
     
     def detailsFrom(detailsCSV: File): Set[Details] = {
@@ -142,7 +143,6 @@ object CsvAdapter {
                 }
             }
         }
-        
         vehiculesAccidentes.values.toSet
     }
 

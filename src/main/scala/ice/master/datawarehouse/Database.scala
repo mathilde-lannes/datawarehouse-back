@@ -26,6 +26,7 @@ import scala.util.Failure
 import scala.util.Success
 import org.mongodb.scala.Observable
 
+
 class Database {
     val mongo: MongoClient = MongoClient()
     
@@ -54,27 +55,6 @@ class Database {
     
     def drop() = {
         database.drop()
-    }
-    
-    def test() = {
-        accidents.find()
-                .andThen {
-                    case Failure(t) => t.printStackTrace()
-                    case Success(_) =>
-                        Thread.sleep(10000)
-                        println("STEP 1")
-                }
-        .andThen {
-                    case Failure(t) => t.printStackTrace()
-                    case Success(_) =>
-                        Thread.sleep(10000)
-                        println("STEP 2")
-                }.andThen {
-                    case Failure(t) => t.printStackTrace()
-                    case Success(_) =>
-                        Thread.sleep(10000)
-                        println("STEP 3")
-                }
     }
     
     def closeConnection(): Unit = {
